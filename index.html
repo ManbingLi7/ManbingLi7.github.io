@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manbing Li</title>
+<meta name="description" content="Manbing Li, postdoctoral researcher in science and machine learning at the University of Geneva / CERN. Poster with interactive 3D models of the AMS-02 and DAMPE detectors.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a conference poster. Navy title banner with author line, then three columns of numbered
+   panels; the wide centre column holds two live 3D detectors (AMS-02, DAMPE). Single light theme, like print. */
+:root {
+  --paper: #e9edf1;
+  --panel: #ffffff;
+  --ink: #111a26;
+  --muted: #566273;
+  --rule: #d3d9e0;
+  --navy: #0f2340;
+  --cobalt: #2557c9;     /* nuclei, protons, links */
+  --amber: #df8a17;      /* electrons, energy deposit */
+  --font-display: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 15.5px; line-height: 1.55; }
+a { color: var(--cobalt); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; line-height: 1.1; text-wrap: balance; }
+p { margin: 0 0 10px; }
+.mono { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: 0.02em; }
+.poster { max-width: 1560px; margin: 0 auto; padding: 20px; }
+
+/* Banner */
+.banner { background: var(--navy); color: #fff; border-radius: 6px; padding: 30px 34px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end; }
+.banner .kicker { font-family: var(--font-mono); font-size: 12.5px; color: #9fb3d1; letter-spacing: 0.08em; text-transform: uppercase; }
+.banner h1 { font-size: clamp(34px, 4.6vw, 64px); font-weight: 800; font-stretch: 78%; letter-spacing: -0.01em; margin: 10px 0 14px; max-width: 22ch; }
+.banner h1 span { color: var(--amber); }
+.authors { font-size: 19px; font-weight: 500; }
+.authors sup { color: #9fb3d1; }
+.affil { color: #b9c7db; font-size: 14px; margin-top: 4px; }
+.banner .contact { text-align: right; font-family: var(--font-mono); font-size: 13px; line-height: 1.9; }
+.banner .contact a { color: #fff; }
+
+/* Columns */
+.cols { display: grid; grid-template-columns: minmax(0, 2.55fr) minmax(0, 1fr); gap: 18px; margin-top: 18px; align-items: start; }
+.leftmid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr); gap: 18px; align-items: start; }
+.looking { grid-column: 1 / -1; }
+.col { display: grid; gap: 18px; }
+.panel { background: var(--panel); border-radius: 6px; border-top: 4px solid var(--navy); padding: 18px 20px 20px; }
+.panel h2 { font-size: 22px; font-weight: 700; font-stretch: 85%; display: flex; gap: 10px; align-items: baseline; margin-bottom: 12px; }
+.panel h2 .n { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: #fff; background: var(--navy); border-radius: 3px; padding: 1px 7px; transform: translateY(-2px); }
+.panel h3 { font-size: 16.5px; font-weight: 700; font-stretch: 90%; margin: 14px 0 4px; }
+ul.tight { margin: 0; padding-left: 1.1em; }
+ul.tight li { margin: 3px 0; }
+
+.formula { font-family: "Times New Roman", Georgia, serif; font-style: italic; font-size: 26px; text-align: center; background: var(--paper); border-radius: 4px; padding: 10px; margin: 10px 0 12px; }
+.formula small { display: block; font-family: var(--font-mono); font-style: normal; font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+.tl { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px 12px; }
+.tl .d { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
+.tl b { font-weight: 600; }
+.tl .w { color: var(--muted); font-size: 14px; }
+
+/* 3D viewers */
+.viewer { padding: 0; overflow: hidden; }
+.viewer-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px 0; flex-wrap: wrap; }
+.viewer-head h2 { margin: 0; }
+.stage { position: relative; height: 470px; background: radial-gradient(ellipse at 50% 40%, #ffffff 0%, #eef2f6 70%); margin-top: 10px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); touch-action: none; }
+.stage canvas { display: block; width: 100%; height: 100%; }
+.stage .hint { position: absolute; left: 12px; bottom: 10px; pointer-events: none; }
+.stage .fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center; color: var(--muted); }
+.ctrls { display: flex; gap: 6px; flex-wrap: wrap; }
+.ctrls button { font: 500 13px var(--font-mono); border: 1px solid var(--rule); background: var(--panel); color: var(--ink); padding: 5px 11px; border-radius: 4px; cursor: pointer; }
+.ctrls button:hover { border-color: var(--ink); }
+.ctrls button[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
+.viewer-foot { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; padding: 14px 20px 18px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; align-content: start; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+table.readout { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+table.readout td { padding: 3px 0; border-bottom: 1px dotted var(--rule); }
+table.readout td:last-child { text-align: right; color: var(--ink); font-weight: 500; }
+table.readout td:first-child { color: var(--muted); }
+.caption { padding: 0 20px 18px; font-size: 13.5px; color: var(--muted); }
+
+/* HAMF diagram + metric */
+svg.arch { width: 100%; height: auto; display: block; margin: 6px 0 10px; }
+svg.arch .box { fill: var(--paper); stroke: var(--navy); stroke-width: 1.2; }
+svg.arch .hot { fill: #fbecd6; stroke: var(--amber); }
+svg.arch .adv { fill: #e3eafa; stroke: var(--cobalt); stroke-dasharray: 4 3; }
+svg.arch text { font-family: var(--font-body); font-size: 11.5px; fill: var(--ink); }
+svg.arch .sm { font-family: var(--font-mono); font-size: 9.5px; fill: var(--muted); }
+svg.arch path { fill: none; stroke: var(--navy); stroke-width: 1.2; }
+.metric { display: grid; grid-template-columns: auto auto auto; justify-content: start; align-items: baseline; gap: 12px; margin: 6px 0 4px; }
+.metric b { font-family: var(--font-display); font-size: 40px; font-weight: 800; font-stretch: 80%; font-variant-numeric: tabular-nums; }
+.metric .to { color: var(--amber); font-size: 26px; }
+.metric b.after { color: var(--amber); }
+
+.pubs { margin: 0; padding-left: 1.1em; font-size: 13.5px; }
+.pubs li { margin: 5px 0; }
+.pubs .j { color: var(--muted); }
+.prl { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.prl span { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--rule); border-radius: 3px; padding: 1px 6px; color: var(--muted); }
+
+dl.sk { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 6px 10px; margin: 0; font-size: 14px; }
+dl.sk dt { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); padding-top: 2px; }
+dl.sk dd { margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { background: var(--paper); border-radius: 3px; padding: 3px 9px; font-size: 13.5px; }
+.chips b { font-weight: 600; }
+
+/* Bottom strip */
+.strip { margin-top: 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+details.agent summary { cursor: pointer; font-family: var(--font-display); font-weight: 700; font-stretch: 85%; font-size: 18px; }
+.agent-actions { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+.btn { font: 500 12.5px var(--font-mono); background: var(--navy); color: #fff; border: 0; border-radius: 4px; padding: 6px 12px; cursor: pointer; }
+pre.json { margin: 0; padding: 12px; background: var(--paper); border-radius: 4px; overflow: auto; max-height: 380px; font: 11.5px/1.5 var(--font-mono); }
+.refs { font-size: 12.5px; color: var(--muted); }
+
+@media (max-width: 1180px) {
+  .cols { grid-template-columns: 1fr; }
+  .cols > .col { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 860px) {
+  .banner { grid-template-columns: 1fr; }
+  .banner .contact { text-align: left; }
+  .cols, .strip, .leftmid, .cols > .col { grid-template-columns: 1fr; }
+  .viewer-foot { grid-template-columns: 1fr; }
+  .stage { height: 400px; }
+}
+@media (max-width: 480px) {
+  .poster { padding: 12px 16px; }
+  .banner { padding: 22px 20px; }
+}
+</style>
+</head>
+<body>
+<main class="poster">
+
+<header class="banner">
+  <div>
+    <div class="kicker">Personal research poster · November 2026</div>
+    <h1>AI for science and <span>trustworthy</span> machine learning</h1>
+    <div class="authors">Manbing Li<sup>1</sup></div>
+    <div class="affil"><sup>1</sup> Département de Physique Nucléaire et Corpusculaire (DPNC), University of Geneva / CERN · DAMPE &amp; AMS-02 collaborations</div>
+  </div>
+  <div class="contact">
+    <div>Postdoctoral Researcher<br>Science &amp; Machine Learning</div>
+    <div><a href="mailto:manbing.li@cern.ch">manbing.li@cern.ch</a></div>
+    <div><a href="https://www.linkedin.com/in/manbingli707">linkedin.com/in/manbingli707</a></div>
+    <div><a href="https://github.com/ManbingLi7">github.com/ManbingLi7</a></div>
+    <div>Geneva, Switzerland</div>
+  </div>
+</header>
+
+<div class="cols">
+<div class="leftmid">
+
+  <!-- LEFT -->
+  <div class="col">
+    <section class="panel">
+      <h2><span class="n">1</span>Introduction</h2>
+      <p>I measure cosmic rays with detectors in space, and I build the machine-learning models that read them. Models are trained on simulation but must work on flight data, so I treat every model like a measurement: it needs a calibration and an error budget.</p>
+      <p>Research interests: data-driven scientific simulation, deep learning for particle and detector physics, domain adaptation and simulation-to-reality transfer, and uncertainty quantification.</p>
+    </section>
+
+    <section class="panel">
+      <h2><span class="n">2</span>AMS-02: Li and Be isotopes</h2>
+      <p>PhD thesis in Prof. Samuel Ting's AMS-02 collaboration on the International Space Station: <i>Measurement of Beryllium and Lithium Isotopic Compositions in Cosmic Rays with the AMS Experiment</i>.</p>
+      <p>Isotopes of one element share a charge, so they are separated by mass, combining the tracker's rigidity with the velocity from time-of-flight and RICH:</p>
+      <div class="formula">m = Z e R / (γ β c)<small>R: rigidity (magnet + silicon tracker) · β: velocity (TOF, RICH)</small></div>
+      <ul class="tight">
+        <li>Multi-dimensional likelihood models of the mass distribution</li>
+        <li>Two-dimensional template fits for isotope yields</li>
+        <li>Monte Carlo calibration of detector response</li>
+        <li>Full systematic-error budget, reviewed by the collaboration</li>
+      </ul>
+      <p style="margin-top:10px">Try the ⁷Be / ¹⁰Be buttons on the AMS-02 model: same rigidity, different velocity, a smaller Cherenkov ring.</p>
+    </section>
+
+    <section class="panel">
+      <h2><span class="n">3</span>Experience &amp; education</h2>
+      <div class="tl">
+        <span class="d">2024.10 – now</span>
+        <div><b>Postdoctoral Researcher</b><div class="w">University of Geneva / CERN · DAMPE</div>
+          <ul class="tight" style="font-size:14px;margin-top:4px">
+            <li>Transformers, CNNs and MLPs for calorimeter images, particle ID and energy regression</li>
+            <li>Models that propagate systematic uncertainties through the analysis</li>
+            <li>Automated data and training pipelines; LoRA and instruction-tuned LLMs for internal tools</li>
+            <li>Supervises PhD students</li>
+          </ul>
+        </div>
+        <span class="d">2026.02 – 05</span>
+        <div><b>Algorithm / AI Engineer</b><div class="w">SiCarrier (SunLit), Shanghai</div></div>
+        <span class="d">2020 – 2024</span>
+        <div><b>PhD in Science</b><div class="w">University of Geneva</div></div>
+        <span class="d">2017 – 2019</span>
+        <div><b>MSc in Science</b><div class="w">RWTH Aachen University</div></div>
+        <span class="d">2013 – 2017</span>
+        <div><b>BSc in Science</b><div class="w">Huazhong University of Science and Technology</div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- MIDDLE: 3D -->
+  <div class="col mid">
+    <section class="panel viewer" id="ams">
+      <div class="viewer-head">
+        <h2><span class="n">4</span>AMS-02 on the ISS</h2>
+        <div class="ctrls" role="group" aria-label="AMS-02 particle">
+          <button type="button" data-p="be7" aria-pressed="true">⁷Be</button>
+          <button type="button" data-p="be10" aria-pressed="false">¹⁰Be</button>
+          <button type="button" data-p="e" aria-pressed="false">e⁻</button>
+          <button type="button" data-p="fire" aria-label="Fire a new event">↻ event</button>
+        </div>
+      </div>
+      <div class="stage" id="ams-stage"><span class="hint mono">drag to rotate · scroll to zoom</span></div>
+      <div class="viewer-foot">
+        <div class="legend">
+          <span><i style="background:#8e99a8"></i>Silicon tracker L1–L9</span>
+          <span><i style="background:#9fbf8f"></i>TRD</span>
+          <span><i style="background:#6f9fd6"></i>TOF</span>
+          <span><i style="background:#b9a08a"></i>Magnet (cut away)</span>
+          <span><i style="background:#c7b8dc"></i>ACC</span>
+          <span><i style="background:#86c4cf"></i>RICH</span>
+          <span><i style="background:#a3aab4"></i>ECAL</span>
+        </div>
+        <table class="readout" aria-live="polite">
+          <tbody id="ams-readout"></tbody>
+        </table>
+      </div>
+      <p class="caption">Schematic geometry. Bending in the 0.14 T permanent magnet is exaggerated so it can be seen. Cherenkov angle from cos θ = 1/(nβ) with aerogel n = 1.05.</p>
+    </section>
+
+    <section class="panel viewer" id="dampe">
+      <div class="viewer-head">
+        <h2><span class="n">5</span>DAMPE in orbit</h2>
+        <div class="ctrls" role="group" aria-label="DAMPE particle">
+          <button type="button" data-p="e" aria-pressed="true">e⁻ 1 TeV</button>
+          <button type="button" data-p="p" aria-pressed="false">p</button>
+          <button type="button" data-p="fire" aria-label="Fire a new event">↻ event</button>
+        </div>
+      </div>
+      <div class="stage" id="dampe-stage"><span class="hint mono">drag to rotate · scroll to zoom</span></div>
+      <div class="viewer-foot">
+        <div class="legend">
+          <span><i style="background:#7fb8ad"></i>PSD (plastic scintillator)</span>
+          <span><i style="background:#8e99a8"></i>STK (silicon + tungsten)</span>
+          <span><i style="background:#c3cad3"></i>BGO calorimeter 14 × 22</span>
+          <span><i style="background:#a99cc2"></i>NUD</span>
+        </div>
+        <table class="readout" aria-live="polite">
+          <tbody id="dampe-readout"></tbody>
+        </table>
+      </div>
+      <p class="caption">The classification problem behind HAMF: electrons make narrow showers that peak early; protons start late and spread wide. Toy shower model on schematic geometry.</p>
+    </section>
+  </div>
+
+  <section class="panel looking" style="border-top-color: var(--amber)">
+      <h2><span class="n" style="background:var(--amber)">10</span>Looking for</h2>
+      <p>AI scientist roles in trustworthy, uncertainty-aware AI for science and engineering: surrogate models and emulators for expensive simulations, and calibration when moving from simulation to real data. I want my work to help solve problems that matter for society. I bring a physicist's habit of putting an error bar on every claim, and a track record of publishing and shipping reproducible ML research.</p>
+      <p style="margin:0"><a href="mailto:manbing.li@cern.ch">manbing.li@cern.ch</a></p>
+    </section>
+</div>
+
+  <!-- RIGHT -->
+  <div class="col">
+    <section class="panel">
+      <h2><span class="n">6</span>HAMF with domain adaptation</h2>
+      <p>Electron/proton separation for the TeV cosmic-ray electron spectrum, where protons outnumber electrons by about 100 to 1.</p>
+      <svg class="arch" viewBox="0 0 360 214" role="img" aria-label="HAMF architecture: BGO image through a CNN and 94 scalar features through an MLP, fused by GLU gating and hierarchical attention, feeding an electron/proton classifier and, through a gradient reversal layer, a domain classifier">
+        <rect class="box" x="4" y="14" width="92" height="38" rx="3"/>
+        <text x="50" y="30" text-anchor="middle">BGO image</text><text class="sm" x="50" y="44" text-anchor="middle">14 × 22</text>
+        <rect class="box" x="4" y="72" width="92" height="38" rx="3"/>
+        <text x="50" y="88" text-anchor="middle">Scalar features</text><text class="sm" x="50" y="102" text-anchor="middle">94 variables</text>
+        <rect class="box" x="116" y="14" width="58" height="38" rx="3"/><text x="145" y="37" text-anchor="middle">CNN</text>
+        <rect class="box" x="116" y="72" width="58" height="38" rx="3"/><text x="145" y="95" text-anchor="middle">MLP</text>
+        <rect class="box hot" x="194" y="30" width="78" height="64" rx="3"/>
+        <text x="233" y="54" text-anchor="middle">GLU gating</text><text x="233" y="68" text-anchor="middle">+ hierarchical</text><text x="233" y="82" text-anchor="middle">attention</text>
+        <rect class="box hot" x="290" y="40" width="66" height="44" rx="3"/>
+        <text x="323" y="59" text-anchor="middle">e / p</text><text class="sm" x="323" y="73" text-anchor="middle">classifier</text>
+        <rect class="box adv" x="194" y="150" width="78" height="40" rx="3"/>
+        <text x="233" y="167" text-anchor="middle">GRL</text><text class="sm" x="233" y="181" text-anchor="middle">−λ · ∇</text>
+        <rect class="box adv" x="290" y="150" width="66" height="40" rx="3"/>
+        <text x="323" y="167" text-anchor="middle">domain</text><text class="sm" x="323" y="181" text-anchor="middle">MC / data</text>
+        <path d="M96 33 H116 M96 91 H116 M174 33 H194 M174 91 H194 M272 62 H290 M233 94 V150 M272 170 H290"/>
+        <text class="sm" x="4" y="128">importance weights for the</text>
+        <text class="sm" x="4" y="140">~1% electron fraction in flight data</text>
+      </svg>
+      <p>The gradient reversal layer makes the learned features unable to tell Monte Carlo from flight data, so a model trained on simulation generalises without retraining.</p>
+    </section>
+
+    <section class="panel">
+      <h2><span class="n">7</span>AutoPhysics</h2>
+      <p>A seven-agent LLM pipeline that writes, runs and improves Geant4 simulations on its own: planner, code generator, simulator, evaluator, optimizer, analyst and reporter, closed by an automated improvement loop. Submitted to BAAI Agent4S.</p>
+    </section>
+
+    <section class="panel">
+      <h2><span class="n">8</span>Selected publications</h2>
+      <ol class="pubs">
+        <li>DAMPE Collaboration, Charge-dependent spectral softenings of primary cosmic rays below the knee. <span class="j">Nature 653, 52–55 (2026)</span></li>
+        <li>A. Serpolla, A. Tykhonov, P. Coppin, <b>M. Li</b> et al., Machine-learning correction for the calorimeter saturation of cosmic-ray ions with DAMPE: towards the PeV scale. <span class="j">Nucl. Instrum. Methods A 1085 (2026)</span></li>
+        <li>E. Putti-Garcia, <b>M. Li</b> et al., Energy reconstruction of non-fiducial electron-positron events in DAMPE using convolutional neural networks. <span class="j">JINST (2025)</span></li>
+        <li>D. Kyratzis et al. (DAMPE), Latest advancements on cosmic-ray carbon and oxygen with DAMPE. <span class="j">PoS ICRC2025 (2025)</span></li>
+        <li>M. Aguilar et al. (AMS), The Alpha Magnetic Spectrometer on the ISS, Part II: results from the first seven years. <span class="j">Phys. Rep. 894, 1–116 (2021)</span></li>
+      </ol>
+      <div class="mono" style="margin-top:10px">AMS-02 · Physical Review Letters</div>
+      <div class="prl">
+        <span>deuterons 132 (2024)</span><span>positron time structure 131 (2023)</span><span>sulfur 130 (2023)</span><span>electron time structure 130 (2023)</span><span>daily helium 128 (2022)</span><span>proton periodicities 127 (2021)</span><span>Na, Al, N 127 (2021)</span><span>fluorine 126 (2021)</span><span>iron 126 (2021)</span><span>Ne, Mg, Si 124 (2020)</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2><span class="n">9</span>Skills</h2>
+      <dl class="sk">
+        <dt>Code</dt><dd>C/C++ and Python (advanced), SQL, shell, MATLAB</dd>
+        <dt>ML</dt><dd>PyTorch, TensorFlow; transformer, CNN and multimodal models; scikit-learn, XGBoost, SHAP, Optuna; LoRA</dd>
+        <dt>Statistics</dt><dd>Likelihood fits, template fitting, systematic uncertainties, UQ</dd>
+        <dt>Computing</dt><dd>Linux, HPC batch systems, Git, ROOT, Geant4</dd>
+      </dl>
+      <h3>Languages</h3>
+      <div class="chips"><span><b>Chinese</b> native</span><span><b>Cantonese</b> fluent</span><span><b>English</b> C1</span><span><b>German</b> B1</span><span><b>French</b> A1</span></div>
+    </section>
+
+  </div>
+</div>
+
+<div class="strip" style="grid-template-columns: 1fr">
+  <section class="panel refs">
+    <b style="color:var(--ink)">About the models.</b> Both detectors are drawn from public layouts at schematic scale (centimetres): AMS-02 with TRD, TOF, nine silicon tracker layers, permanent magnet, ACC, RICH and ECAL; DAMPE with PSD, STK, a 14-layer × 22-bar BGO calorimeter and NUD. Events are toy simulations for illustration, not Geant4 output.
+  </section>
+</div>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  if (!window.THREE) {
+    document.querySelectorAll(".stage").forEach(st => st.insertAdjacentHTML("beforeend", '<div class="fallback">The 3D model needs WebGL and could not load here.</div>'));
+    return;
+  }
+
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const AMBER = new THREE.Color("#df8a17"), COBALT = new THREE.Color("#2557c9");
+  let seed = 11;
+  const rand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+
+  /* ---------- shared viewer ---------- */
+  function makeViewer(stage, camPos, target, dist) {
+    let renderer;
+    try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
+    catch (e) { stage.insertAdjacentHTML("beforeend", '<div class="fallback">The 3D model needs WebGL, which this browser has turned off.</div>'); return null; }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    stage.prepend(renderer.domElement);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(32, 1, 1, 5000);
+    camera.position.set(...camPos);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xb8c2cf, 0.95));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.55); dl.position.set(200, 300, 250); scene.add(dl);
+    let controls = null;
+    if (THREE.OrbitControls) {
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.target.set(...target); controls.enableDamping = true; controls.dampingFactor = 0.08;
+      controls.autoRotate = !reduce; controls.autoRotateSpeed = 0.6;
+      controls.minDistance = dist * 0.35; controls.maxDistance = dist * 2.2; controls.enablePan = false;
+      controls.update();
+    } else { camera.lookAt(...target); }
+    function size() {
+      const w = stage.clientWidth, h = stage.clientHeight;
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+    new ResizeObserver(size).observe(stage); size();
+    let visible = true;
+    new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(stage);
+    return { scene, camera, renderer, controls, isVisible: () => visible };
+  }
+
+  function shell(geo, color, opacity, edges) {
+    const g = new THREE.Group();
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, roughness: 0.7, metalness: 0.05 }));
+    g.add(m);
+    if (edges !== false) {
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 25), new THREE.LineBasicMaterial({ color: new THREE.Color(color).multiplyScalar(0.62), transparent: true, opacity: 0.55 }));
+      g.add(e);
+    }
+    return g;
+  }
+  function at(o, x, y, z) { o.position.set(x, y, z); return o; }
+  function cell(w, h, d, base) {
+    const mat = new THREE.MeshStandardMaterial({ color: base, transparent: true, opacity: 0.16, depthWrite: false, roughness: 0.6 });
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.userData.base = new THREE.Color(base);
+    return m;
+  }
+  function light(mesh, s, col) {
+    const m = mesh.material;
+    if (s <= 0) { m.color.copy(mesh.userData.base); m.emissive.setRGB(0, 0, 0); m.opacity = 0.16; m.depthWrite = false; return; }
+    m.color.copy(mesh.userData.base).lerp(col, Math.min(1, 0.35 + s));
+    m.emissive.copy(col).multiplyScalar(0.4 * s);
+    m.opacity = 0.3 + 0.7 * s; m.depthWrite = s > 0.5;
+  }
+  function trackLine(points, col) {
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    geo.setDrawRange(0, 0);
+    return new THREE.Line(geo, new THREE.LineBasicMaterial({ color: col, linewidth: 2 }));
+  }
+  function dot(p, r, col) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), new THREE.MeshBasicMaterial({ color: col }));
+    m.position.copy(p); m.visible = false; return m;
+  }
+  function setButtons(root, key) {
+    root.querySelectorAll("button[data-p]").forEach(b => { if (b.dataset.p !== "fire") b.setAttribute("aria-pressed", b.dataset.p === key); });
+  }
+  function row(k, v) { return `<tr><td>${k}</td><td>${v}</td></tr>`; }
+
+  /* =================== AMS-02 =================== */
+  (function ams() {
+    const stage = document.getElementById("ams-stage");
+    const V = makeViewer(stage, [430, 140, 560], [0, 2, 0], 720);
+    if (!V) return;
+    const det = new THREE.Group(); V.scene.add(det);
+    const CUT = { start: Math.PI * 0.25, len: Math.PI * 1.5 };   // cut-away quadrant facing the camera
+    const TRK = "#8e99a8";
+    const trackerY = [159, 53, 29, 25, 2, -2, -25, -29, -136];
+    trackerY.forEach((y, i) => {
+      const r = i === 0 ? 62 : i === 8 ? 58 : i === 1 ? 52 : 47;
+      det.add(at(shell(new THREE.CylinderGeometry(r, r, 0.6, 40), TRK, 0.32), 0, y, 0));
+    });
+    const trd = shell(new THREE.CylinderGeometry(100, 78, 60, 8, 1, false), "#9fbf8f", 0.13);
+    trd.rotation.y = Math.PI / 8; trd.position.y = 113; det.add(trd);
+    const tofPaddles = [];
+    function tof(y0, axisX) {
+      for (let i = 0; i < 8; i++) {
+        const c = (i - 3.5) * 14.5;
+        const m = axisX ? cell(118, 1, 13.5, "#6f9fd6") : cell(13.5, 1, 118, "#6f9fd6");
+        m.position.set(axisX ? 0 : c, y0, axisX ? c : 0); m.material.opacity = 0.28; m.userData.idle = 0.28;
+        m.userData.axisX = axisX; m.userData.c = c; det.add(m); tofPaddles.push(m);
+      }
+    }
+    tof(66, true); tof(63.5, false); tof(-63.5, true); tof(-66, false);
+    const magProfile = [new THREE.Vector2(56, -40), new THREE.Vector2(85, -40), new THREE.Vector2(85, 40), new THREE.Vector2(56, 40), new THREE.Vector2(56, -40)];
+    det.add(shell(new THREE.LatheGeometry(magProfile, 64, CUT.start, CUT.len), "#b9a08a", 0.42));
+    det.add(shell(new THREE.CylinderGeometry(54, 54, 82, 48, 1, true, CUT.start, CUT.len), "#c7b8dc", 0.14));
+    det.add(at(shell(new THREE.CylinderGeometry(60, 60, 2.5, 48), "#86c4cf", 0.3), 0, -73, 0));
+    det.add(at(shell(new THREE.CylinderGeometry(60, 67, 46, 64, 1, true, CUT.start, CUT.len), "#86c4cf", 0.16), 0, -97, 0));
+    det.add(at(shell(new THREE.CylinderGeometry(67, 67, 0.6, 64), "#86c4cf", 0.18), 0, -120.5, 0));
+    const hole = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([[-32, -32], [32, -32], [32, 32], [-32, 32]].map(([x, z]) => new THREE.Vector3(x, -120, z))), new THREE.LineBasicMaterial({ color: "#4f8f9a" }));
+    det.add(hole);
+    // ECAL: 9 superlayers x 18 cells, alternating orientation
+    const ecal = [];
+    for (let l = 0; l < 9; l++) {
+      const y = -142 - l * 1.9;
+      for (let k = 0; k < 18; k++) {
+        const c = (k - 8.5) * 3.6;
+        const along = l % 2 === 0;
+        const m = along ? cell(65, 1.7, 3.4, "#a3aab4") : cell(3.4, 1.7, 65, "#a3aab4");
+        m.position.set(along ? 0 : c, y, along ? c : 0); m.userData.l = l; m.userData.k = k; m.userData.along = along;
+        det.add(m); ecal.push(m);
+      }
+    }
+    const ev = new THREE.Group(); V.scene.add(ev);
+
+    const P = {
+      be7:  { name: "⁷Be", Z: 4, m: 6.534, col: COBALT },
+      be10: { name: "¹⁰Be", Z: 4, m: 9.327, col: COBALT },
+      e:    { name: "e⁻", Z: -1, m: 0.000511, col: AMBER }
+    };
+    const R = 10; // GV
+    let kind = "be7", items = [], line = null, t0 = 0, N = 0;
+
+    function path(x0, z0, tx, tz, q) {
+      const D = 14 * Math.sign(q);
+      return y => {
+        const u = Math.max(0, 40 - y);
+        const b = u <= 80 ? u * u / 2 : 3200 + 80 * (u - 80);
+        return new THREE.Vector3(x0 + tx * (175 - y) + D * b / 12800, y, z0 + tz * (175 - y));
+      };
+    }
+
+    function fire() {
+      ev.clear(); items = [];
+      tofPaddles.forEach(m => light(m, 0, AMBER)); tofPaddles.forEach(m => { m.material.opacity = 0.28; });
+      ecal.forEach(m => light(m, 0, AMBER));
+      const p = P[kind];
+      const x0 = (rand() - 0.5) * 14, z0 = (rand() - 0.5) * 14, tx = (rand() - 0.5) * 0.08, tz = (rand() - 0.5) * 0.08;
+      const f = path(x0, z0, tx, tz, p.Z);
+      const pts = []; for (let y = 175; y >= -160; y -= 1) pts.push(f(y));
+      N = pts.length; line = trackLine(pts, p.col); ev.add(line);
+      trackerY.forEach(y => { const d = dot(f(y), 1.6, p.col); ev.add(d); items.push({ y, on: () => { d.visible = true; } }); });
+      tofPaddles.forEach(m => {
+        const pt = f(m.position.y), coord = m.userData.axisX ? pt.z : pt.x;
+        if (Math.abs(coord - m.userData.c) < 7.25) items.push({ y: m.position.y, on: () => light(m, 0.9, p.col) });
+      });
+      // RICH ring
+      const ptot = Math.abs(p.Z) * R, E = Math.hypot(ptot, p.m), beta = ptot / E, gamma = E / p.m;
+      const n = 1.05, cosT = 1 / (n * beta), theta = Math.acos(Math.min(1, cosT));
+      const rr = Math.tan(theta) * 47, c = f(-120);
+      const ringPts = []; for (let i = 0; i <= 96; i++) { const a = i / 96 * Math.PI * 2; ringPts.push(new THREE.Vector3(c.x + rr * Math.cos(a), -119.6, c.z + rr * Math.sin(a))); }
+      const ring = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ringPts), new THREE.LineBasicMaterial({ color: p.col, transparent: true, opacity: 0.85 }));
+      ring.visible = false; ev.add(ring);
+      const phot = []; for (let i = 0; i < 26; i++) { const a = rand() * Math.PI * 2, r2 = rr + (rand() - 0.5) * 1.6; const d = dot(new THREE.Vector3(c.x + r2 * Math.cos(a), -119.4, c.z + r2 * Math.sin(a)), 0.9, p.col); ev.add(d); phot.push(d); }
+      items.push({ y: -118, on: () => { ring.visible = true; phot.forEach(d => d.visible = true); } });
+      // ECAL deposit
+      ecal.forEach(m => {
+        const l = m.userData.l, pt = f(m.position.y), coord = m.userData.along ? pt.z : pt.x, dk = Math.abs(coord - ((m.userData.k - 8.5) * 3.6)) / 3.6;
+        let s;
+        if (kind === "e") { const t = (l + 0.5) * 1.9, lon = Math.pow(t, 3.2) * Math.exp(-0.62 * t) / 30; s = lon * Math.exp(-dk / (0.55 + l * 0.08)); }
+        else s = dk < 0.5 ? 0.35 : 0;
+        if (s > 0.02) items.push({ y: m.position.y, on: () => light(m, Math.min(1, s), p.col) });
+      });
+      const tof_ns = 130 / (beta * 29.979);
+      document.getElementById("ams-readout").innerHTML =
+        row("particle", `${p.name} (Z = ${p.Z})`) + row("rigidity R", `${p.Z < 0 ? "−" : ""}${R.toFixed(1)} GV`) +
+        row("velocity β", beta.toFixed(4)) + row("TOF Δt (1.3 m)", `${tof_ns.toFixed(3)} ns`) +
+        row("Cherenkov θ", `${(theta * 180 / Math.PI).toFixed(1)}°`) + row("ring radius", `${rr.toFixed(1)} cm`) +
+        row("mass = ZR/(γβ)", p.m < 0.01 ? "0.511 MeV" : `${(Math.abs(p.Z) * R / (gamma * beta)).toFixed(2)} GeV`);
+      t0 = performance.now();
+      if (reduce) { line.geometry.setDrawRange(0, N); items.forEach(i => i.on()); items = []; }
+    }
+
+    let last = performance.now();
+    function loop(now) {
+      requestAnimationFrame(loop);
+      if (!V.isVisible()) return;
+      if (line && items.length) {
+        const k = Math.min(1, (now - t0) / 1800), head = 175 - k * 335;
+        line.geometry.setDrawRange(0, Math.floor(k * N));
+        items = items.filter(i => { if (i.y >= head) { i.on(); return false; } return true; });
+      } else if (line) line.geometry.setDrawRange(0, N);
+      if (!reduce && now - t0 > 6500) fire();
+      if (V.controls) V.controls.update();
+      V.renderer.render(V.scene, V.camera); last = now;
+    }
+    const root = document.getElementById("ams");
+    root.querySelectorAll("button[data-p]").forEach(b => b.addEventListener("click", () => {
+      if (b.dataset.p !== "fire") { kind = b.dataset.p; setButtons(root, kind); }
+      fire();
+    }));
+    fire(); requestAnimationFrame(loop);
+  })();
+
+  /* =================== DAMPE =================== */
+  (function dampe() {
+    const stage = document.getElementById("dampe-stage");
+    const V = makeViewer(stage, [150, 85, 175], [0, 14, 0], 260);
+    if (!V) return;
+    const det = new THREE.Group(); V.scene.add(det);
+    // PSD: 2 layers of 41 bars
+    const psd = [];
+    [[60.5, true], [58.5, false]].forEach(([y, alongX]) => {
+      for (let i = 0; i < 41; i++) {
+        const c = (i - 20) * 2.0;
+        const m = alongX ? cell(82, 1, 1.9, "#7fb8ad") : cell(1.9, 1, 82, "#7fb8ad");
+        m.position.set(alongX ? 0 : c, y, alongX ? c : 0); m.material.opacity = 0.2; m.userData.alongX = alongX; m.userData.c = c;
+        det.add(m); psd.push(m);
+      }
+    });
+    // STK: 6 x/y silicon pairs + 3 tungsten plates
+    const stkY = [];
+    for (let i = 0; i < 6; i++) {
+      const y = 50 - i * 4.4;
+      [0, 0.6].forEach(dy => { stkY.push(y - dy); det.add(at(shell(new THREE.BoxGeometry(76, 0.15, 76), "#8e99a8", 0.16), 0, y - dy, 0)); });
+      if (i >= 1 && i <= 3) det.add(at(shell(new THREE.BoxGeometry(76, 0.12, 76), "#3c4452", 0.45), 0, y - 2.2, 0));
+    }
+    // BGO: 14 layers x 22 bars (2.5 x 2.5 x 60 cm), alternating
+    const bgo = [];
+    for (let l = 0; l < 14; l++) {
+      const y = 20 - l * 2.9, alongX = l % 2 === 0;
+      for (let k = 0; k < 22; k++) {
+        const c = (k - 10.5) * 2.75;
+        const m = alongX ? cell(60, 2.5, 2.5, "#c3cad3") : cell(2.5, 2.5, 60, "#c3cad3");
+        m.position.set(alongX ? 0 : c, y, alongX ? c : 0); m.userData.l = l; m.userData.k = k; m.userData.alongX = alongX;
+        det.add(m); bgo.push(m);
+      }
+    }
+    // NUD
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => det.add(at(shell(new THREE.BoxGeometry(30, 1, 30), "#a99cc2", 0.25), a * 15.5, -24, b * 15.5)));
+    const ev = new THREE.Group(); V.scene.add(ev);
+
+    let kind = "e", items = [], line = null, t0 = 0, N = 0;
+    function fire() {
+      ev.clear(); items = [];
+      psd.forEach(m => { light(m, 0, AMBER); m.material.opacity = 0.2; });
+      bgo.forEach(m => light(m, 0, AMBER));
+      const col = kind === "e" ? AMBER : COBALT;
+      const x0 = (rand() - 0.5) * 10, z0 = (rand() - 0.5) * 10, tx = (rand() - 0.5) * 0.25, tz = (rand() - 0.5) * 0.25;
+      const f = y => new THREE.Vector3(x0 + tx * (y - 20), y, z0 + tz * (y - 20));
+      const start = kind === "e" ? 0 : 2 + Math.floor(rand() * 5);
+      const yEnd = kind === "e" ? 20 - 4 * 2.9 : 20 - start * 2.9;
+      const pts = []; for (let y = 78; y >= yEnd; y -= 0.5) pts.push(f(y));
+      N = pts.length; line = trackLine(pts, col); ev.add(line);
+      psd.forEach(m => { const pt = f(m.position.y), coord = m.userData.alongX ? pt.z : pt.x; if (Math.abs(coord - m.userData.c) < 1.0) items.push({ y: m.position.y, on: () => light(m, 0.9, col) }); });
+      stkY.forEach(y => { const d = dot(f(y), 0.55, col); ev.add(d); items.push({ y, on: () => { d.visible = true; } }); });
+      // energy per bar
+      let blobs = [];
+      if (kind === "p") { blobs.push({ dx: 0, dz: 0, l: start + 2, s: 1 }); for (let i = 0; i < 3; i++) blobs.push({ dx: (rand() - 0.5) * 22, dz: (rand() - 0.5) * 22, l: start + 2 + rand() * 7, s: 0.3 + rand() * 0.5 }); }
+      const E = bgo.map(m => {
+        const l = m.userData.l, pt = f(m.position.y), coord = m.userData.alongX ? pt.z : pt.x;
+        const dk = (coord - (m.userData.k - 10.5) * 2.75) / 2.75;
+        if (kind === "e") { const t = (l + 0.5) * 2.3, b = 0.5, a = b * 11.5 + 1; return Math.pow(t, a - 1) * Math.exp(-b * t) * Math.exp(-Math.abs(dk) / (0.6 + l * 0.08)) * (0.85 + 0.3 * rand()); }
+        if (l < start) return Math.abs(dk) < 0.5 ? 1e-3 : 0;
+        let v = 0; blobs.forEach(bl => { const off = (m.userData.alongX ? bl.dz : bl.dx) / 2.75, dl = l - bl.l; v += bl.s * Math.exp(-dl * dl / 10) * Math.exp(-Math.abs(dk - off) / (1.2 + (l - start) * 0.25)); });
+        return v * (0.6 + 0.8 * rand());
+      });
+      const max = Math.max(...E), tot = E.reduce((a, b) => a + b, 0);
+      bgo.forEach((m, i) => { const v = E[i] / max; if (v > 2e-3) { const s = Math.max(0.04, 1 + Math.log10(v) / 3.2); items.push({ y: m.position.y, on: () => light(m, s, col) }); } });
+      // longitudinal summary
+      const perLayer = Array.from({ length: 14 }, (_, l) => E.filter((_, i) => bgo[i].userData.l === l).reduce((a, b) => a + b, 0));
+      const maxL = perLayer.indexOf(Math.max(...perLayer));
+      const hitBars = E.filter(v => v / max > 0.01).length;
+      const last = perLayer[13] / tot;
+      document.getElementById("dampe-readout").innerHTML =
+        row("particle", kind === "e" ? "e⁻ ~1 TeV" : "proton") +
+        row("first interaction", kind === "e" ? "layer 1" : `layer ${start + 1}`) +
+        row("shower maximum", `layer ${maxL + 1} of 14`) +
+        row("bars > 1% of max", `${hitBars} of 308`) +
+        row("last-layer fraction", `${(last * 100).toFixed(2)} %`);
+      t0 = performance.now();
+      if (reduce) { line.geometry.setDrawRange(0, N); items.forEach(i => i.on()); items = []; }
+    }
+
+    function loop(now) {
+      requestAnimationFrame(loop);
+      if (!V.isVisible()) return;
+      if (line && items.length) {
+        const k = Math.min(1, (now - t0) / 1500), head = 78 - k * 120;
+        line.geometry.setDrawRange(0, Math.floor(Math.min(1, k * 1.9) * N));
+        items = items.filter(i => { if (i.y >= head) { i.on(); return false; } return true; });
+      } else if (line) line.geometry.setDrawRange(0, N);
+      if (!reduce && now - t0 > 6000) fire();
+      if (V.controls) V.controls.update();
+      V.renderer.render(V.scene, V.camera);
+    }
+    const root = document.getElementById("dampe");
+    root.querySelectorAll("button[data-p]").forEach(b => b.addEventListener("click", () => {
+      if (b.dataset.p !== "fire") { kind = b.dataset.p; setButtons(root, kind); }
+      fire();
+    }));
+    fire(); requestAnimationFrame(loop);
+  })();
+})();
+</script>
+</body>
+</html>
